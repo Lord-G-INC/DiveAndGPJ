@@ -29,19 +29,32 @@ namespace {
         if (true) // To b instead of bl
             isSlipPolygon__11MarioModuleCFPC8Triangle(a1);
     }
-    float setJumpHeight () {
-        // The Triple Jump value is technically a little over 32, but it would get rounded down anyway.
-        if (isGPJ) 
-            return 32.0f;
-        else 
-            return 0.0f; // Replaced by kmWrites
+    // Shoutouts to Evanbowl
+    float tripleJumpValue = 32.0f;
+    asm float setJumpHeight() {
+        lis r3, isGPJ@ha
+        lbz r0, isGPJ@l(r3)
+        cmpwi r0, 0
+        beq doDefaultJump
+        lis r3, tripleJumpValue@ha
+        lfs f1, tripleJumpValue@l(r3)    
+        blr
+    doDefaultJump:
+        fmr f1, f30
+        blr
     }
-    void doGPJAnime () {
-        if (isGPJ) 
-            asm("nop"); // Replaced by kmWrite
-        else 
-            asm("nop"); // Replaced by kmWrite
+    asm void doGPJAnime () {
+        lis r3, isGPJ@ha
+        lbz r0, isGPJ@l(r3)
+        cmpwi r0, 0
+        beq doDefaultJump
+        li r0, 2
+        blr
+    doDefaultJump:
+        lwz r0, 0x42C(r27)
+        blr
     }
+
     void doGPJHeight () {
         isGPJ = true;
         tryJump__5MarioFv(thisIsRequiredForSomeReason);
@@ -52,16 +65,6 @@ namespace {
     kmCall(0x803B254C, getCurrentVar);
     kmBranch(0x80388DA0, checkIfDiveAllowed);
     
-    // Inline Assembly and CodeWarrior are archenemies, so instead a few kmWrites will have to do.
-    
-    // Else clause in setJumpHeight
-    kmWrite32(0x807FCF64, 0x60000000); // nop
-    kmWrite32(0x807FCF68, 0xFC20F090); // fmr f1, f30
-    
-    // nops in doGPJAnime
-    kmWrite32(0x807FCF80, 0x38000002); // li r0, 2
-    kmWrite32(0x807FCF88, 0x801B042C); // lwz r0, 0x42C(r27)
-
     // Change Camera Reset Button to D-Pad Down
     kmWrite32(0x8011E058, 0x4BF0C319); // bl MR::testCorePadTriggerDown()
 }
